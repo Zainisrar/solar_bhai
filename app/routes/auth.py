@@ -6,7 +6,7 @@ from bson import ObjectId
 from dotenv import load_dotenv
 import os
 import bcrypt
-
+from bson import ObjectId
 from fastapi.security import OAuth2PasswordBearer
 from bson import ObjectId
 from dotenv import load_dotenv
@@ -98,4 +98,8 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
 # Example protected route
 @router.get("/dashboard")
 def dashboard(current_user: dict = Depends(get_current_user)):
-    return {"message": f"Welcome {current_user['name']}!", "email": current_user["email"]}
+    return {
+        "message": f"Welcome {current_user['name']}!",
+        "email": current_user["email"],
+        "id": str(current_user["_id"])  # Convert ObjectId to string
+    }
