@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routes import auth , question # your signup/login API file
+from app.routes import auth , question , Load_analysis # your signup/login API file
 
 app = FastAPI()
 
@@ -18,6 +18,7 @@ app.add_middleware(
 # Include your API routes
 app.include_router(auth.router)
 app.include_router(question.router)
+app.include_router(Load_analysis.router)
 
 # Root route
 @app.get("/")

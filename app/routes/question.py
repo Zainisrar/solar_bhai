@@ -1,28 +1,14 @@
-from fastapi import APIRouter, File, Depends, HTTPException
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, EmailStr
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
+from typing import List
 from pymongo import MongoClient
 from bson import ObjectId
 from dotenv import load_dotenv
 import os
-import bcrypt
-from typing import List
-from fastapi.security import OAuth2PasswordBearer
-from bson import ObjectId
-from dotenv import load_dotenv
-import os
-import bcrypt
-from datetime import datetime, timedelta
-from jose import JWTError, jwt
-from fastapi.security import OAuth2PasswordBearer
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-from typing import Any
-from openai import OpenAI  # Or your LLM client wrapper
-from fastapi import Body
-from pydantic import BaseModel
 from datetime import datetime
 import certifi
+from openai import OpenAI
+
 # Load env variables
 load_dotenv()
 
@@ -46,8 +32,8 @@ class PromptRequest(BaseModel):
 # Pydantic model for NLP entry
 class NLPEntry(BaseModel):
     user_id: str
-    question: str
-    answer: str
+    prompt: str
+    answers: List[str]  # list of answers
 
 # ------------------------------
 # LLM Handler Function
@@ -107,19 +93,20 @@ async def clarify_prompt(data: PromptRequest) -> List[str]:
 
 @router.post("/question_ans_save")
 def save_nlp(entry: NLPEntry):
-    # Validate if user exists
+    # Validate user_id
     if not ObjectId.is_valid(entry.user_id):
         raise HTTPException(status_code=400, detail="Invalid user ID format")
 
+    # Check if user exists
     user = users_collection.find_one({"_id": ObjectId(entry.user_id)})
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # Create NLP record
+    # Prepare document
     nlp_doc = {
         "user_id": ObjectId(entry.user_id),
-        "question": entry.question,
-        "answer": entry.answer,
+        "prompt": entry.prompt,
+        "answers": entry.answers,  # list of answers
         "created_at": datetime.utcnow()
     }
 
