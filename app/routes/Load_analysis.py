@@ -150,7 +150,8 @@ def get_user_prompt_and_answers_as_string(request: LoadAnalysisRequest):
 
         # 3️⃣ Call Gemini to get JSON analysis
         json_output = get_json_from_gemini(combined_text, my_api_key)
-
+        json_str = json.dumps(json_output)
+        final_str = combined_text + json_str
         # 4️⃣ Parse the Gemini JSON output
         try:
             parsed_data = json.loads(json_output)
@@ -166,11 +167,13 @@ def get_user_prompt_and_answers_as_string(request: LoadAnalysisRequest):
         result=load_collection.insert_one({
             "user_id": ObjectId(user_id),
             "nlp_id": ObjectId(nlp_id),
+            "text":final_str,
             "analysisSummary": analysis_summary,
             "detailedLoadList": detailed_load_list,
             "preliminarySizingRecommendations": preliminary_sizing_recommendations,
             "created_at": datetime.utcnow()
         })
+
 
         # 7️⃣ Return confirmation
         return {
