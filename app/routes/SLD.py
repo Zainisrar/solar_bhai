@@ -1,5 +1,4 @@
-
-from fastapi import APIRouter,HTTPException
+from fastapi import APIRouter, HTTPException, Body
 from pymongo import MongoClient
 from dotenv import load_dotenv
 import os
@@ -138,32 +137,49 @@ def get_json_from_gemini(user_input: str, api_key: str):
         return json.dumps({"error": f"An error occurred while calling the API or parsing the response: {e}", "raw_response": response.text if 'response' in locals() else "No response received."}, indent=2)
 
 
-@router.get("/combine-data/{doc_id}")
-def combine_data(doc_id: str):
+@router.post("/combine-data")
+def combine_data(
+    user_id: str = Body(...),
+    project_id: str = Body(...),
+    load_id: str = Body(...)
+):
     # Fetch document from MongoDB
-    doc = load_collection.find_one({"_id": ObjectId(doc_id)})
+    doc = load_collection.find_one(
+        {
+            "_id": ObjectId(load_id),
+            "user_id": ObjectId(user_id),
+            "project_id": ObjectId(project_id)
+        },
+        {"text": 1, "_id": 0}  # Only get the text field
+    )
+
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
-    
+
     if "text" not in doc:
         raise HTTPException(status_code=400, detail="'text' field missing in document")
-    
+
     text_data = doc["text"]
+
     json_output = get_json_from_gemini(text_data, my_api_key)
-    # 4️⃣ Parse the Gemini JSON output
+
     try:
         parsed_data = json.loads(json_output)
         if not parsed_data:
             raise HTTPException(status_code=400, detail="No data provided")
+        
         result = weather_collection.insert_one(parsed_data)
         return {"inserted_id": str(result.inserted_id)}
-    except json.JSONDecodeError as e:
+
+    except (json.JSONDecodeError, TypeError) as e:
         raise HTTPException(status_code=500, detail=f"Invalid JSON from Gemini: {e}")
 
-@router.get("/weather/{doc_id}")
-def get_weather(doc_id: str):
-    doc = weather_collection.find_one({"_id": ObjectId(doc_id)})
+
+@router.get("/weather/{weather_id}")
+def get_weather(weather_id: str):
+    doc = weather_collection.find_one({"_id": ObjectId(weather_id)})
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
+    
     doc["_id"] = str(doc["_id"])
     return doc

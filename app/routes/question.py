@@ -23,6 +23,7 @@ clients = MongoClient(MONGO_URI, tlsCAFile=certifi.where())
 db = clients[DB_NAME]
 users_collection = db["users"]
 nlp_collection = db["nlp"]
+projects_collection=db["projects"]
 # ------------------------------
 # Request Model
 # ------------------------------
@@ -32,6 +33,7 @@ class PromptRequest(BaseModel):
 # Pydantic model for NLP entry
 class NLPEntry(BaseModel):
     user_id: str
+    project_id: str
     prompt: str
     answers: List[str]  # list of answers
 
@@ -97,14 +99,20 @@ def save_nlp(entry: NLPEntry):
     if not ObjectId.is_valid(entry.user_id):
         raise HTTPException(status_code=400, detail="Invalid user ID format")
 
+    if not ObjectId.is_valid(entry.project_id):
+        raise HTTPException(status_code=400, detail="Invalid project_id ID format")
+
     # Check if user exists
     user = users_collection.find_one({"_id": ObjectId(entry.user_id)})
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-
+    project = projects_collection.find_one({"_id": ObjectId(entry.project_id)})
+    if not project:
+        raise HTTPException(status_code=404, detail="project not found")
     # Prepare document
     nlp_doc = {
         "user_id": ObjectId(entry.user_id),
+        "project_id": ObjectId(entry.project_id),
         "prompt": entry.prompt,
         "answers": entry.answers,  # list of answers
         "created_at": datetime.utcnow()

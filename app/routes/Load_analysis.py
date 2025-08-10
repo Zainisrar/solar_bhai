@@ -129,18 +129,25 @@ def get_json_from_gemini(user_prompt: str, api_key: str):
 class LoadAnalysisRequest(BaseModel):
     user_id: str  # from users collection
     nlp_id: str   # _id of the nlp_collection document
+    project_id:str
 
 @router.post("/nlp/load_analysis")
 def get_user_prompt_and_answers_as_string(request: LoadAnalysisRequest):
     try:
         user_id = request.user_id
         nlp_id = request.nlp_id
+        project_id = request.project_id
 
         # 1️⃣ Get specific NLP document by user_id & _id
         doc = nlp_collection.find_one(
-            {"_id": ObjectId(nlp_id), "user_id": ObjectId(user_id)},
+            {
+                "_id": ObjectId(nlp_id),
+                "user_id": ObjectId(user_id),
+                "project_id": ObjectId(project_id)  # ✅ Added check for project_id
+            },
             {"prompt": 1, "answers": 1, "_id": 0}
         )
+
 
         if not doc:
             raise HTTPException(status_code=404, detail="NLP record not found")
@@ -167,6 +174,7 @@ def get_user_prompt_and_answers_as_string(request: LoadAnalysisRequest):
         result=load_collection.insert_one({
             "user_id": ObjectId(user_id),
             "nlp_id": ObjectId(nlp_id),
+            "project_id":ObjectId(project_id),
             "text":final_str,
             "analysisSummary": analysis_summary,
             "detailedLoadList": detailed_load_list,
